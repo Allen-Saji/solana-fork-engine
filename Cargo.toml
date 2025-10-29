@@ -1,0 +1,19 @@
+[package]
+name = "solana-fork-engine"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+# Tokio: Async runtime (like Node.js event loop)
+tokio = { version = "1", features = ["full"] }
+
+# Axum: Web framework (like Express.js)
+axum = "=0.8.6"
+
+# Serde: JSON serialization (like JSON.stringify/parse)
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# NEW: Solana dependencies
+litesvm = "=0.8.1"
+solana-sdk = "=3.0.0"
