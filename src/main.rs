@@ -40,6 +40,12 @@ async fn main() {
             post(routes::send_transaction),
         )
         .route("/api/v1/fork/transfer", post(routes::transfer_sol))
+        // Token operations (NEW)
+        .route("/api/v1/token/create-mint", post(routes::create_token_mint))
+        .route("/api/v1/token/create-account", post(routes::create_token_account))
+        .route("/api/v1/token/mint", post(routes::mint_tokens))
+        .route("/api/v1/token/transfer", post(routes::transfer_tokens))
+        .route("/api/v1/token/balance", post(routes::get_token_balance))
         .with_state(state);
 
     // Print available endpoints
