@@ -1,6 +1,9 @@
 use solana_keypair::Keypair;
 use std::error::Error;
 
+use axum::http::StatusCode;
+use crate::services::fork_manager::ForkManager;
+
 use crate::constants::LAMPORTS_PER_SOL;
 
 /// Parse keypair from various string formats
@@ -36,4 +39,20 @@ pub fn lamports_to_sol(lamports: u64) -> f64 {
 /// Convert SOL to lamports
 pub fn sol_to_lamports(sol: f64) -> u64 {
     (sol * LAMPORTS_PER_SOL as f64) as u64
+}
+
+pub fn resolve_fork_id(
+    fork_manager: &ForkManager,
+    user_id: &Option<String>,
+) -> Result<String, StatusCode> {
+    if let Some(uid) = user_id {
+        // Try to find fork by user_id
+        if let Some(fork_id) = fork_manager.get_user_fork_id(uid) {
+            Ok(fork_id.clone())
+        } else {
+            Err(StatusCode::NOT_FOUND)
+        }
+    } else {
+        Err(StatusCode::BAD_REQUEST)
+    }
 }

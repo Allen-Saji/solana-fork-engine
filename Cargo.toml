@@ -17,6 +17,9 @@ serde_json = "1.0"
 # NEW: Solana dependencies
 litesvm = "=0.8.1"
 solana-sdk = "=3.0.0"
+solana-client = "=3.0.0"
+solana-account-decoder = "=3.0.0"
+reqwest = { version = "0.12.24", features = ["json"] }
 
 # Add SPL token dependencies
 spl-token = { version = "9.0.0", features = ["no-entrypoint"] }
@@ -26,6 +29,7 @@ spl-associated-token-account = { version = "8.0.0", features = ["no-entrypoint"]
 base64 = "0.22.1"
 bincode = "1.3"
 bs58 = "0.5"
+uuid = { version = "1.11.0", features = ["v4"] }
 
 # liteSVM and related Solana crates (as shown in docs)
 solana-pubkey = "3.0.0"

@@ -1,4 +1,4 @@
-use crate::fork_manager::SharedForkManager;
+use crate::services::fork_manager::SharedForkManager;
 
 /// Application state shared across all route handlers
 #[derive(Clone)]

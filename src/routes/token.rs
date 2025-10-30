@@ -15,12 +15,12 @@ use spl_associated_token_account::{
 };
 use std::str::FromStr;
 
-use crate::token_models::*;
+use crate::models::token::*;
 use crate::state::AppState;
 
 /// Helper function to resolve fork_id from user_id
 fn resolve_fork_id(
-    manager: &crate::fork_manager::ForkManager,
+    manager: &crate::services::fork_manager::ForkManager,
     user_id: &str,
 ) -> Result<String, StatusCode> {
     manager

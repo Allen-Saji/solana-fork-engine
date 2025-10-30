@@ -22,7 +22,7 @@ use crate::{
 
 /// Helper function to resolve fork_id from request
 fn resolve_fork_id(
-    manager: &crate::fork_manager::ForkManager,
+    manager: &crate::services::fork_manager::ForkManager,
     fork_id: Option<String>,
     user_id: Option<String>,
 ) -> Result<String, StatusCode> {

@@ -1,7 +1,7 @@
 pub mod fork;
 pub mod requests;
 pub mod responses;
-pub mod token_models;
+pub mod token;
 
 
 
@@ -9,4 +9,4 @@ pub mod token_models;
 pub use fork::*;
 pub use requests::*;
 pub use responses::*;
-pub use token_models::*;
+pub use token::*;

@@ -6,6 +6,41 @@ pub struct CreateForkRequest {
     pub user_id: Option<String>,
 }
 
+/// Request to create a fork from mainnet with specific accounts
+#[derive(Deserialize)]
+pub struct CreateMainnetForkRequest {
+    pub user_id: Option<String>,
+    pub accounts: Vec<String>, // Pubkeys to load from mainnet
+    pub rpc_endpoint: Option<String>, // Optional custom RPC endpoint
+}
+
+/// Request to load a single account from mainnet into fork
+#[derive(Deserialize)]
+pub struct LoadAccountRequest {
+    pub fork_id: Option<String>,
+    pub user_id: Option<String>,
+    pub address: String,
+    pub rpc_endpoint: Option<String>,
+}
+
+/// Request to load multiple accounts from mainnet
+#[derive(Deserialize)]
+pub struct LoadAccountsRequest {
+    pub fork_id: Option<String>,
+    pub user_id: Option<String>,
+    pub addresses: Vec<String>,
+    pub rpc_endpoint: Option<String>,
+}
+
+/// Request to load all token accounts for an owner
+#[derive(Deserialize)]
+pub struct LoadTokenAccountsRequest {
+    pub fork_id: Option<String>,
+    pub user_id: Option<String>,
+    pub owner: String,
+    pub rpc_endpoint: Option<String>,
+}
+
 /// Request to set account balance
 #[derive(Deserialize)]
 pub struct SetBalanceRequest {
@@ -50,3 +85,4 @@ pub struct TransferRequest {
     pub amount_sol: f64,
     pub private_key: String,
 }
+

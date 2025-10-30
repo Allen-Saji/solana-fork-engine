@@ -85,3 +85,26 @@ pub struct TransactionResult {
     pub signature: String,
     pub error: Option<String>,
 }
+
+// ============================================
+// MAINNET FORKING RESPONSES
+// ============================================
+
+/// Response for mainnet fork creation with loaded accounts
+#[derive(Serialize)]
+pub struct CreateMainnetForkResponse {
+    pub fork_id: String,
+    pub user_id: String,
+    pub created_at: String,
+    pub expires_at: String,
+    pub accounts_loaded: usize,
+    pub loaded_addresses: Vec<String>,
+}
+
+/// Response for loading accounts
+#[derive(Serialize)]
+pub struct LoadAccountsResponse {
+    pub success: bool,
+    pub accounts_loaded: usize,
+    pub loaded_addresses: Vec<String>,
+}
