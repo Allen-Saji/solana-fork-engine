@@ -1,14 +1,13 @@
-use crate::services::fork_manager::SharedForkManager;
+use std::sync::{Arc, Mutex};
+use crate::services::fork_manager::ForkManager;
 
-/// Application state shared across all route handlers
-#[derive(Clone)]
+#[derive(Clone)]  // ← ADD THIS
 pub struct AppState {
-    pub fork_manager: SharedForkManager,
+    pub fork_manager: Arc<Mutex<ForkManager>>,
 }
 
 impl AppState {
-    /// Create new application state with fork manager
-    pub fn new(fork_manager: SharedForkManager) -> Self {
+    pub fn new(fork_manager: Arc<Mutex<ForkManager>>) -> Self {
         Self { fork_manager }
     }
 }

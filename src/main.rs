@@ -9,6 +9,8 @@ use solana_fork_engine::{
     state::AppState,
 };
 
+use std::time::Duration;
+
 #[tokio::main]
 async fn main() {
     println!("🚀 Starting Solana Fork Engine v0.4.0");
@@ -17,7 +19,22 @@ async fn main() {
     
     // Create application state (no initial fork)
     let fork_manager = create_shared_fork_manager();
-    let state = AppState::new(fork_manager);
+    let state = AppState::new(fork_manager.clone());  // Clone for background task
+    
+    // Spawn background task for cleanup (ADD THIS)
+    let cleanup_fork_manager = fork_manager.clone();
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(Duration::from_secs(60)); // Run every 60 seconds
+        loop {
+            interval.tick().await;
+            if let Ok(mut manager) = cleanup_fork_manager.lock() {
+                let cleaned = manager.cleanup_expired_forks();
+                if cleaned > 0 {
+                    println!("🧹 Cleaned up {} expired fork(s)", cleaned);
+                }
+            }
+        }
+    });
     
     // Build the router with all routes
     let app = Router::new()
@@ -55,6 +72,8 @@ async fn main() {
         .route("/api/v1/token/mint", post(routes::mint_tokens))
         .route("/api/v1/token/transfer", post(routes::transfer_tokens))
         .route("/api/v1/token/balance", post(routes::get_token_balance))
+        .route("/rpc", post(routes::handle_rpc))
+        
         
         // Program deployment and testing (NEW)
         .route("/api/v1/program/deploy", post(routes::deploy_program))

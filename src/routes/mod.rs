@@ -5,6 +5,7 @@ pub mod transaction;
 pub mod token;
 pub mod mainnet;
 pub mod program;
+pub mod rpc;
 
 // Re-export all route handlers
 pub use balance::{airdrop, get_account, get_balance, set_balance};
@@ -16,3 +17,4 @@ pub use token::{
 };
 pub use mainnet::*;
 pub use program::*;
+pub use rpc::*;
