@@ -3,6 +3,7 @@ use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::models::Fork;
+use crate::services::MainnetClient;
 
 /// Maximum fork lifetime in seconds (15 minutes)
 const FORK_LIFETIME_SECONDS: u64 = 15 * 60;
@@ -24,7 +25,41 @@ impl ForkManager {
         }
     }
 
-    /// Create a new fork for a user
+    /// Create a new fork for a user, synced with mainnet
+    pub fn create_fork_with_mainnet_sync(
+        &mut self,
+        user_id: String,
+        mainnet_client: &MainnetClient,
+    ) -> Result<String, String> {
+        // Check if user already has a fork
+        if let Some(fork_id) = self.user_forks.get(&user_id) {
+            // Check if fork is still valid
+            if let Some(fork) = self.forks.get(fork_id) {
+                if !self.is_fork_expired(fork) {
+                    return Ok(fork_id.clone());
+                }
+            }
+        }
+
+        // Fetch mainnet state
+        let mainnet_slot = mainnet_client.get_slot()?;
+        let mainnet_blockhash = mainnet_client.get_latest_blockhash()?;
+
+        // Create new fork with mainnet sync
+        let fork_id = format!("fork-{}-{}", user_id, Self::current_timestamp());
+        let fork = Fork::new_with_mainnet_sync(
+            fork_id.clone(),
+            mainnet_slot,
+            mainnet_blockhash,
+        );
+
+        self.forks.insert(fork_id.clone(), fork);
+        self.user_forks.insert(user_id, fork_id.clone());
+
+        Ok(fork_id)
+    }
+
+    /// Create a new fork for a user (legacy - without mainnet sync)
     pub fn create_fork(&mut self, user_id: String) -> String {
         // Check if user already has a fork
         if let Some(fork_id) = self.user_forks.get(&user_id) {

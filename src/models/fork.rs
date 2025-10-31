@@ -11,11 +11,36 @@ pub struct Fork {
     pub svm: LiteSVM,
     pub created_at: u64,
     pub slot: u64,
+    pub mainnet_slot: u64,        // ← NEW: Mainnet slot at fork creation
+    pub mainnet_blockhash: String, // ← NEW: Mainnet blockhash at fork creation
     pub transaction_count: u64,
 }
 
 impl Fork {
-    /// Create a new fork with the given ID
+    /// Create a new fork with the given ID, synced with mainnet
+    pub fn new_with_mainnet_sync(
+        id: String,
+        mainnet_slot: u64,
+        mainnet_blockhash: String,
+    ) -> Self {
+        let svm = LiteSVM::new();
+        let created_at = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+
+        Self {
+            id,
+            svm,
+            created_at,
+            slot: mainnet_slot,           // ← Initialize with mainnet slot
+            mainnet_slot,                 // ← Store original mainnet slot
+            mainnet_blockhash,            // ← Store mainnet blockhash
+            transaction_count: 0,
+        }
+    }
+
+    /// Create a new fork with the given ID (legacy method - for backward compatibility)
     pub fn new(id: String) -> Self {
         let svm = LiteSVM::new();
         let created_at = SystemTime::now()
@@ -28,6 +53,8 @@ impl Fork {
             svm,
             created_at,
             slot: 0,
+            mainnet_slot: 0,
+            mainnet_blockhash: String::new(),
             transaction_count: 0,
         }
     }
@@ -84,8 +111,9 @@ impl Fork {
         // Process the transaction
         let result = self.svm.send_transaction(transaction);
 
-        // Increment transaction count
+        // Increment transaction count and slot
         self.transaction_count += 1;
+        self.slot += 1;  // ← Increment slot with each transaction
 
         match result {
             Ok(_) => Ok(TransactionResult {

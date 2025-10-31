@@ -1,8 +1,9 @@
 use axum::{
-    extract::State,
+    extract::{Query, State},
     http::StatusCode,
     Json,
 };
+use serde::Deserialize;
 use solana_pubkey::Pubkey;
 use std::str::FromStr;
 
@@ -19,6 +20,12 @@ use crate::{
     state::AppState,
     utils::{lamports_to_sol, sol_to_lamports},
 };
+
+// Add this struct for query parameters
+#[derive(Debug, Deserialize)]
+pub struct UserQuery {
+    pub user_id: Option<String>,
+}
 
 /// Helper function to resolve fork_id from request
 fn resolve_fork_id(
@@ -41,6 +48,7 @@ fn resolve_fork_id(
 /// Set account balance
 pub async fn set_balance(
     State(state): State<AppState>,
+    Query(query): Query<UserQuery>,
     Json(payload): Json<SetBalanceRequest>,
 ) -> Result<Json<SetBalanceResponse>, StatusCode> {
     let address = Pubkey::from_str(&payload.address).map_err(|_| StatusCode::BAD_REQUEST)?;
@@ -50,7 +58,9 @@ pub async fn set_balance(
         .lock()
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let fork_id = resolve_fork_id(&manager, payload.fork_id, payload.user_id)?;
+    // Prioritize query param over payload
+    let user_id = query.user_id.or(payload.user_id);
+    let fork_id = resolve_fork_id(&manager, payload.fork_id, user_id)?;
 
     let fork = manager
         .get_fork_mut(&fork_id)
@@ -70,6 +80,7 @@ pub async fn set_balance(
 /// Get account balance
 pub async fn get_balance(
     State(state): State<AppState>,
+    Query(query): Query<UserQuery>,
     Json(payload): Json<GetBalanceRequest>,
 ) -> Result<Json<GetBalanceResponse>, StatusCode> {
     let address = Pubkey::from_str(&payload.address).map_err(|_| StatusCode::BAD_REQUEST)?;
@@ -79,7 +90,9 @@ pub async fn get_balance(
         .lock()
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let fork_id = resolve_fork_id(&manager, payload.fork_id, payload.user_id)?;
+    // Prioritize query param over payload
+    let user_id = query.user_id.or(payload.user_id);
+    let fork_id = resolve_fork_id(&manager, payload.fork_id, user_id)?;
 
     let fork = manager.get_fork(&fork_id).ok_or(StatusCode::NOT_FOUND)?;
 
@@ -96,6 +109,7 @@ pub async fn get_balance(
 /// Get detailed account information
 pub async fn get_account(
     State(state): State<AppState>,
+    Query(query): Query<UserQuery>,
     Json(payload): Json<GetBalanceRequest>,
 ) -> Result<Json<AccountInfo>, StatusCode> {
     let address = Pubkey::from_str(&payload.address).map_err(|_| StatusCode::BAD_REQUEST)?;
@@ -105,7 +119,9 @@ pub async fn get_account(
         .lock()
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let fork_id = resolve_fork_id(&manager, payload.fork_id, payload.user_id)?;
+    // Prioritize query param over payload
+    let user_id = query.user_id.or(payload.user_id);
+    let fork_id = resolve_fork_id(&manager, payload.fork_id, user_id)?;
 
     let fork = manager.get_fork(&fork_id).ok_or(StatusCode::NOT_FOUND)?;
 
@@ -117,6 +133,7 @@ pub async fn get_account(
 /// Airdrop SOL to an account
 pub async fn airdrop(
     State(state): State<AppState>,
+    Query(query): Query<UserQuery>,
     Json(payload): Json<AirdropRequest>,
 ) -> Result<Json<AirdropResponse>, StatusCode> {
     let address = Pubkey::from_str(&payload.address).map_err(|_| StatusCode::BAD_REQUEST)?;
@@ -128,7 +145,9 @@ pub async fn airdrop(
         .lock()
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let fork_id = resolve_fork_id(&manager, payload.fork_id, payload.user_id)?;
+    // Prioritize query param over payload
+    let user_id = query.user_id.or(payload.user_id);
+    let fork_id = resolve_fork_id(&manager, payload.fork_id, user_id)?;
 
     let fork = manager
         .get_fork_mut(&fork_id)

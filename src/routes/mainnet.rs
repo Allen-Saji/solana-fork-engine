@@ -36,17 +36,22 @@ pub async fn create_mainnet_fork(
         MainnetClient::new()
     };
 
-    // First create a regular fork
+    let user_id = payload.user_id.unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
+
+    // Create fork with mainnet sync
     let mut fork_manager = state.fork_manager.lock()
         .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Lock error".to_string()))?;
 
-    let user_id = payload.user_id.unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
-    let fork_id = fork_manager.create_fork(user_id.clone());
+    let fork_id = fork_manager.create_fork_with_mainnet_sync(user_id.clone(), &mainnet_client)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to sync with mainnet: {}", e)))?;
 
-    // Get the created_at timestamp from the fork
-    let created_at = fork_manager.get_fork(&fork_id)
-        .ok_or((StatusCode::INTERNAL_SERVER_ERROR, "Fork creation failed".to_string()))?
-        .created_at;
+    // Get fork metadata
+    let fork = fork_manager.get_fork(&fork_id)
+        .ok_or((StatusCode::INTERNAL_SERVER_ERROR, "Fork creation failed".to_string()))?;
+    
+    let created_at = fork.created_at;
+    let mainnet_slot = fork.mainnet_slot;
+    let mainnet_blockhash = fork.mainnet_blockhash.clone();
 
     // Load accounts from mainnet into the fork
     let mut loaded_addresses = Vec::new();
@@ -79,16 +84,17 @@ pub async fn create_mainnet_fork(
 
     drop(fork_manager);
 
-    Ok(Json(CreateMainnetForkResponse {
-        fork_id,
-        user_id,
-        created_at: format!("{}", created_at),
-        expires_at: format!("{}", expires_at),
-        accounts_loaded: loaded_addresses.len(),
-        loaded_addresses,
-    }))
+   Ok(Json(CreateMainnetForkResponse {
+    fork_id,
+    user_id,
+    created_at: format!("{}", created_at),
+    expires_at: format!("{}", expires_at),
+    mainnet_slot,           // ← NEW
+    mainnet_blockhash,      // ← NEW
+    accounts_loaded: loaded_addresses.len(),
+    loaded_addresses,
+}))
 }
-
 /// Load a single account from mainnet into an existing fork
 pub async fn load_account(
     State(state): State<AppState>,

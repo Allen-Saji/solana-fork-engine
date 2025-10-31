@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 /// Response after creating a fork
 #[derive(Serialize)]
@@ -91,12 +91,14 @@ pub struct TransactionResult {
 // ============================================
 
 /// Response for mainnet fork creation with loaded accounts
-#[derive(Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CreateMainnetForkResponse {
     pub fork_id: String,
     pub user_id: String,
     pub created_at: String,
     pub expires_at: String,
+    pub mainnet_slot: u64,           // ← NEW
+    pub mainnet_blockhash: String,   // ← NEW
     pub accounts_loaded: usize,
     pub loaded_addresses: Vec<String>,
 }
