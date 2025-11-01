@@ -72,46 +72,11 @@ async fn main() {
         .route("/rpc", post(routes::handle_rpc))
         
         
-        // Program deployment and testing (NEW)
-        .route("/api/v1/program/deploy", post(routes::deploy_program))
-        .route("/api/v1/program/invoke", post(routes::invoke_program))
-        .route("/api/v1/program/load", post(routes::load_program))
-        .route("/api/v1/program/info", post(routes::get_program_info))
         .with_state(state);
     
     // Print available endpoints
     println!("🌐 Server listening on http://{}", DEFAULT_SERVER_ADDR);
     println!();
-    println!("📝 Available endpoints:");
-    println!("  GET  http://localhost:8899/");
-    println!("  GET  http://localhost:8899/health");
-    println!("  GET  http://localhost:8899/api/v1/forks");
-    println!("  POST http://localhost:8899/api/v1/forks");
-    println!();
-    println!("🔗 Mainnet Forking endpoints:");
-    println!("  POST http://localhost:8899/api/v1/forks/mainnet");
-    println!("  POST http://localhost:8899/api/v1/fork/load-account");
-    println!("  POST http://localhost:8899/api/v1/fork/load-accounts");
-    println!("  POST http://localhost:8899/api/v1/fork/load-token-accounts");
-    println!();
-    println!("🔧 Program Deployment & Testing endpoints:");
-    println!("  POST http://localhost:8899/api/v1/program/deploy?user_id=<id>");
-    println!("  POST http://localhost:8899/api/v1/program/invoke?user_id=<id>");
-    println!("  POST http://localhost:8899/api/v1/program/load?user_id=<id>");
-    println!("  POST http://localhost:8899/api/v1/program/info?user_id=<id>");
-    println!();
-    println!("  User-specific endpoints (require ?user_id=<id>):");
-    println!("  GET  http://localhost:8899/api/v1/fork/info?user_id=<id>");
-    println!("  POST http://localhost:8899/api/v1/fork/balance/set?user_id=<id>");
-    println!("  POST http://localhost:8899/api/v1/fork/balance/get?user_id=<id>");
-    println!("  POST http://localhost:8899/api/v1/fork/account?user_id=<id>");
-    println!("  POST http://localhost:8899/api/v1/fork/airdrop?user_id=<id>");
-    println!("  POST http://localhost:8899/api/v1/fork/transaction/send?user_id=<id>");
-    println!("  POST http://localhost:8899/api/v1/fork/transfer?user_id=<id>");
-    println!();
-    println!("💡 Tip: Each user_id gets their own isolated fork!");
-    println!("🌍 Fork from mainnet and test with real accounts!");
-    println!("🚀 Deploy & test your Solana programs safely!");
     
     // Start the server
     let listener = tokio::net::TcpListener::bind(DEFAULT_SERVER_ADDR)
