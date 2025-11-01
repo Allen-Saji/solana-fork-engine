@@ -161,7 +161,7 @@ pub async fn invoke_program(
     }
 }
 
-/// Load a program from mainnet
+//// Load a program from mainnet (SIMPLIFIED VERSION)
 pub async fn load_program(
     State(state): State<AppState>,
     Json(payload): Json<LoadProgramRequest>,
@@ -193,9 +193,39 @@ pub async fn load_program(
     let program_size = program_account.data.len();
     let is_executable = program_account.executable;
 
-    // Load program into fork
-    fork.svm.set_account(program_id, program_account)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to load program: {:?}", e)))?;
+    // For NON-EXECUTABLE accounts, just use set_account
+    if !is_executable {
+        fork.svm.set_account(program_id, program_account)
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to load account: {:?}", e)))?;
+        
+        return Ok(Json(LoadProgramResponse {
+            program_id: payload.program_id,
+            success: true,
+            program_size,
+            is_executable,
+        }));
+    }
+
+    // For EXECUTABLE programs, try different approaches based on owner
+    let bpf_loader_v2 = Pubkey::from_str("BPFLoader2111111111111111111111111111111111").unwrap();
+    let bpf_loader_v3 = Pubkey::from_str("BPFLoaderUpgradeab1e11111111111111111111111").unwrap();
+
+    if program_account.owner == bpf_loader_v2 {
+        // BPF Loader v2 - executable data is in the program account itself
+        fork.svm.add_program(program_id, &program_account.data)
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to load BPF v2 program: {:?}", e)))?;
+    } else if program_account.owner == bpf_loader_v3 {
+        // BPF Loader v3 (Upgradeable) - this is complex
+        // For now, just return an error explaining the limitation
+        return Err((
+            StatusCode::NOT_IMPLEMENTED,
+            "Upgradeable programs (BPF Loader v3) are not fully supported yet. Try loading simpler BPF v2 programs like SPL Token.".to_string()
+        ));
+    } else {
+        // Unknown loader, try set_account
+        fork.svm.set_account(program_id, program_account)
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to load program: {:?}", e)))?;
+    }
 
     Ok(Json(LoadProgramResponse {
         program_id: payload.program_id,

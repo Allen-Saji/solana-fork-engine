@@ -10,8 +10,8 @@ pub struct CreateForkRequest {
 #[derive(Deserialize)]
 pub struct CreateMainnetForkRequest {
     pub user_id: Option<String>,
-    pub accounts: Vec<String>, // Pubkeys to load from mainnet
-    pub rpc_endpoint: Option<String>, // Optional custom RPC endpoint
+    pub accounts: Vec<String>, 
+    pub rpc_endpoint: Option<String>, 
 }
 
 /// Request to load a single account from mainnet into fork

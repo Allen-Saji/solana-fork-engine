@@ -10,9 +10,7 @@ const FORK_LIFETIME_SECONDS: u64 = 15 * 60;
 
 /// Manages multiple forks for different users
 pub struct ForkManager {
-    /// Map of fork_id -> Fork
     forks: HashMap<String, Fork>,
-    /// Map of user_id -> fork_id
     user_forks: HashMap<String, String>,
 }
 
@@ -33,7 +31,6 @@ impl ForkManager {
     ) -> Result<String, String> {
         // Check if user already has a fork
         if let Some(fork_id) = self.user_forks.get(&user_id) {
-            // Check if fork is still valid
             if let Some(fork) = self.forks.get(fork_id) {
                 if !self.is_fork_expired(fork) {
                     return Ok(fork_id.clone());
@@ -59,7 +56,6 @@ impl ForkManager {
         Ok(fork_id)
     }
 
-    /// Create a new fork for a user (legacy - without mainnet sync)
     pub fn create_fork(&mut self, user_id: String) -> String {
         // Check if user already has a fork
         if let Some(fork_id) = self.user_forks.get(&user_id) {

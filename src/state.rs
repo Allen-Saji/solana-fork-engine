@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 use crate::services::fork_manager::ForkManager;
 
-#[derive(Clone)]  // ← ADD THIS
+#[derive(Clone)] 
 pub struct AppState {
     pub fork_manager: Arc<Mutex<ForkManager>>,
 }

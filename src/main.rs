@@ -14,17 +14,14 @@ use std::time::Duration;
 #[tokio::main]
 async fn main() {
     println!("🚀 Starting Solana Fork Engine v0.4.0");
-    println!("   Features: Multiple Forks, User Isolation, Mainnet Forking, Program Deployment");
     println!();
     
-    // Create application state (no initial fork)
     let fork_manager = create_shared_fork_manager();
-    let state = AppState::new(fork_manager.clone());  // Clone for background task
+    let state = AppState::new(fork_manager.clone()); 
     
-    // Spawn background task for cleanup (ADD THIS)
     let cleanup_fork_manager = fork_manager.clone();
     tokio::spawn(async move {
-        let mut interval = tokio::time::interval(Duration::from_secs(60)); // Run every 60 seconds
+        let mut interval = tokio::time::interval(Duration::from_secs(60)); 
         loop {
             interval.tick().await;
             if let Ok(mut manager) = cleanup_fork_manager.lock() {

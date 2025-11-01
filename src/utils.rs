@@ -31,12 +31,10 @@ pub fn parse_keypair(key_str: &str) -> Result<Keypair, Box<dyn Error>> {
     Ok(Keypair::from_base58_string(key_str))
 }
 
-/// Convert lamports to SOL
 pub fn lamports_to_sol(lamports: u64) -> f64 {
     lamports as f64 / LAMPORTS_PER_SOL as f64
 }
 
-/// Convert SOL to lamports
 pub fn sol_to_lamports(sol: f64) -> u64 {
     (sol * LAMPORTS_PER_SOL as f64) as u64
 }

@@ -7,6 +7,8 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use solana_pubkey::Pubkey;
 use std::str::FromStr;
+use base64::{Engine as _, engine::general_purpose};
+
 
 use crate::{
     models::{RpcRequest, RpcResponse},
@@ -116,32 +118,37 @@ fn handle_get_account_info(
         return Err("Missing address parameter".to_string());
     }
 
-    let address_str = params[0]
-        .as_str()
-        .ok_or("Invalid address format")?;
+    let address_str = params[0].as_str().ok_or("Invalid address format")?;
+    
+    // Check for encoding option (params[1])
+    let encoding = params.get(1)
+        .and_then(|v| v.get("encoding"))
+        .and_then(|e| e.as_str())
+        .unwrap_or("base64");
 
     let pubkey = Pubkey::from_str(address_str)
         .map_err(|e| format!("Invalid pubkey: {}", e))?;
 
-    match fork.get_account_info(&pubkey) {
-        Some(account) => Ok(json!({
-            "context": {
-                "slot": fork.slot
-            },
-            "value": {
-                "lamports": account.lamports,
-                "owner": account.owner,
-                "executable": account.executable,
-                "rentEpoch": account.rent_epoch,
-                "data": ["", "base64"]  // Simplified - not returning actual data
-            }
-        })),
-        None => Ok(json!({
-            "context": {
-                "slot": fork.slot
-            },
-            "value": null
-        })),
+    match fork.svm.get_account(&pubkey) {
+        Some(account) => {
+            let encoded_data = match encoding {
+                "base64" => general_purpose::STANDARD.encode(&account.data),
+                "base58" => bs58::encode(&account.data).into_string(),
+                _ => general_purpose::STANDARD.encode(&account.data),
+            };
+            
+            Ok(json!({
+                "context": {"slot": fork.slot},
+                "value": {
+                    "lamports": account.lamports,
+                    "owner": account.owner.to_string(),
+                    "executable": account.executable,
+                    "rentEpoch": account.rent_epoch,
+                    "data": [encoded_data, encoding]
+                }
+            }))
+        },
+        None => Ok(json!({"context": {"slot": fork.slot}, "value": null})),
     }
 }
 
@@ -176,7 +183,7 @@ fn handle_get_health() -> Result<Value, String> {
 /// Handle getVersion RPC method
 fn handle_get_version() -> Result<Value, String> {
     Ok(json!({
-        "solana-core": "1.18.0",
+        "solana-core": "3.0.0",
         "feature-set": 0
     }))
 }

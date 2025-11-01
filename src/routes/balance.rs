@@ -46,6 +46,7 @@ fn resolve_fork_id(
 }
 
 /// Set account balance
+/// Set account balance to EXACT amount
 pub async fn set_balance(
     State(state): State<AppState>,
     Query(query): Query<UserQuery>,
@@ -58,7 +59,6 @@ pub async fn set_balance(
         .lock()
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    // Prioritize query param over payload
     let user_id = query.user_id.or(payload.user_id);
     let fork_id = resolve_fork_id(&manager, payload.fork_id, user_id)?;
 
@@ -66,17 +66,52 @@ pub async fn set_balance(
         .get_fork_mut(&fork_id)
         .ok_or(StatusCode::NOT_FOUND)?;
 
+    // Use set_balance to set EXACT amount
     fork.set_balance(&address, payload.lamports)
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     Ok(Json(SetBalanceResponse {
         success: true,
-        message: "Balance updated successfully".to_string(),
+        message: "Balance set successfully".to_string(),
         address: payload.address,
         new_balance: payload.lamports,
     }))
 }
 
+/// Airdrop SOL (ADDS to existing balance)
+pub async fn airdrop(
+    State(state): State<AppState>,
+    Query(query): Query<UserQuery>,
+    Json(payload): Json<AirdropRequest>,
+) -> Result<Json<AirdropResponse>, StatusCode> {
+    let address = Pubkey::from_str(&payload.address).map_err(|_| StatusCode::BAD_REQUEST)?;
+
+    let lamports = sol_to_lamports(payload.sol);
+
+    let mut manager = state
+        .fork_manager
+        .lock()
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let user_id = query.user_id.or(payload.user_id);
+    let fork_id = resolve_fork_id(&manager, payload.fork_id, user_id)?;
+
+    let fork = manager
+        .get_fork_mut(&fork_id)
+        .ok_or(StatusCode::NOT_FOUND)?;
+
+    // Use add_balance to ADD to existing balance
+    fork.add_balance(&address, lamports)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(Json(AirdropResponse {
+        success: true,
+        message: format!("Airdropped {} SOL", payload.sol),
+        address: payload.address,
+        amount_sol: payload.sol,
+        amount_lamports: lamports,
+    }))
+}
 /// Get account balance
 pub async fn get_balance(
     State(state): State<AppState>,
@@ -130,37 +165,3 @@ pub async fn get_account(
         .ok_or(StatusCode::NOT_FOUND)
 }
 
-/// Airdrop SOL to an account
-pub async fn airdrop(
-    State(state): State<AppState>,
-    Query(query): Query<UserQuery>,
-    Json(payload): Json<AirdropRequest>,
-) -> Result<Json<AirdropResponse>, StatusCode> {
-    let address = Pubkey::from_str(&payload.address).map_err(|_| StatusCode::BAD_REQUEST)?;
-
-    let lamports = sol_to_lamports(payload.sol);
-
-    let mut manager = state
-        .fork_manager
-        .lock()
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    // Prioritize query param over payload
-    let user_id = query.user_id.or(payload.user_id);
-    let fork_id = resolve_fork_id(&manager, payload.fork_id, user_id)?;
-
-    let fork = manager
-        .get_fork_mut(&fork_id)
-        .ok_or(StatusCode::NOT_FOUND)?;
-
-    fork.set_balance(&address, lamports)
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    Ok(Json(AirdropResponse {
-        success: true,
-        message: format!("Airdropped {} SOL", payload.sol),
-        address: payload.address,
-        amount_sol: payload.sol,
-        amount_lamports: lamports,
-    }))
-}
