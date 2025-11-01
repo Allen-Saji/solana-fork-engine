@@ -1,39 +1,40 @@
-# 🚀 Solana Fork Simulation Engine
+# Solana Fork Simulation Engine
 
-A powerful Solana network fork simulation engine that allows developers to test dApps and protocols in isolated environments with real mainnet state. Built with Rust and LiteSVM.
+A high-performance Solana network fork simulation engine that enables developers to test dApps and smart contracts in isolated environments using real mainnet state. Built with Rust and LiteSVM.
 
-[![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org/)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+## Overview
 
-## 🌟 Features
+The Solana Fork Engine creates isolated, in-memory copies of Solana mainnet that can be used for safe testing and development. Each fork is synced with the latest mainnet slot and blockhash, allowing realistic testing without spending real SOL or affecting the production network.
 
-- **🔗 Mainnet State Forking** - Create isolated forks synced with the latest Solana mainnet header
-- **👤 Multi-User Isolation** - Each user gets their own independent fork environment
-- **⏰ Auto-Cleanup** - Forks automatically expire after 15 minutes to manage resources
-- **🔌 JSON-RPC Compatible** - Standard Solana RPC endpoint for wallet and dApp integration
-- **💰 Balance Manipulation** - Update SOL and SPL token balances for testing
-- **📦 Account Loading** - Load real accounts and token accounts from mainnet
-- **🔄 Transaction Support** - Full transaction execution with proper state updates
-- **🎯 Program Deployment** - Deploy and test custom Solana programs
-- **🛡️ Fault Isolation** - Failures in one fork don't affect others
+**Key Features:**
 
-## 📋 Table of Contents
+- Fork creation synced with latest Solana mainnet header (slot + blockhash)
+- Multi-user isolation - each user gets their own independent fork
+- Load real accounts and programs from mainnet on-demand
+- SOL and SPL token balance manipulation for testing
+- Standard Solana JSON-RPC compatibility for wallet/dApp integration
+- Automatic fork cleanup after 15 minutes
+- Full transaction execution support
+- Thread-safe concurrent request handling
+
+## Table of Contents
 
 - [Installation](#installation)
-- [Quick Start](#quick-start)
-- [API Documentation](#api-documentation)
+- [Getting Started](#getting-started)
+- [API Endpoints](#api-endpoints)
 - [Usage Examples](#usage-examples)
 - [Architecture](#architecture)
 - [Configuration](#configuration)
-- [Contributing](#contributing)
+- [Development](#development)
+- [Limitations](#limitations)
 - [License](#license)
 
-## 🔧 Installation
+## Installation
 
 ### Prerequisites
 
 - Rust 1.70 or higher
-- Cargo
+- Cargo (comes with Rust)
 
 ### Build from Source
 
@@ -49,51 +50,48 @@ cargo build --release
 cargo run --release
 ```
 
-The server will start on `http://0.0.0.0:8899`
+The server will start on `http://0.0.0.0:8899` by default.
 
-## 🚀 Quick Start
+### Verify Installation
 
-### 1. Create a Fork
+```bash
+curl http://localhost:8899/health
+```
 
-Create a new fork synced with mainnet and load some accounts:
+You should receive a `200 OK` response.
+
+## Getting Started
+
+### Step 1: Create Your First Fork
+
+Create a new fork synced with mainnet:
 
 ```bash
 curl -X POST http://localhost:8899/api/v1/forks/mainnet \
   -H "Content-Type: application/json" \
-  -d '{
-    "accounts": ["11111111111111111111111111111111"]
-  }'
+  -d '{"accounts": []}'
 ```
 
 **Response:**
 
 ```json
 {
-  "fork_id": "fork-abc123-1234567890",
+  "fork_id": "fork-abc123...",
   "user_id": "abc123-def456-ghi789",
   "created_at": "1234567890",
   "expires_at": "1234568790",
-  "mainnet_slot": 376970830,
-  "mainnet_blockhash": "4EVZgNRMgzkg5xm424NcWBrN1PQHdVWCAqpVzsL6iGti",
-  "accounts_loaded": 1,
-  "loaded_addresses": ["11111111111111111111111111111111"]
+  "mainnet_slot": 377252861,
+  "mainnet_blockhash": "CKEoh...",
+  "accounts_loaded": 0,
+  "loaded_addresses": []
 }
 ```
 
-Save the `user_id` for subsequent requests.
+Save the `user_id` - you'll need it for all subsequent operations on this fork.
 
-### 2. Check Balance
+### Step 2: Airdrop Test SOL
 
-```bash
-curl -X POST http://localhost:8899/api/v1/fork/balance/get \
-  -H "Content-Type: application/json" \
-  -d '{
-    "user_id": "abc123-def456-ghi789",
-    "address": "11111111111111111111111111111111"
-  }'
-```
-
-### 3. Airdrop SOL for Testing
+Add SOL to any address for testing:
 
 ```bash
 curl -X POST http://localhost:8899/api/v1/fork/airdrop \
@@ -105,15 +103,55 @@ curl -X POST http://localhost:8899/api/v1/fork/airdrop \
   }'
 ```
 
-### 4. Connect a Wallet or dApp
+**Response:**
 
-Point your Solana wallet or dApp to the fork's RPC endpoint:
-
+```json
+{
+  "success": true,
+  "message": "Airdropped 100 SOL",
+  "address": "YourWalletAddress",
+  "amount_sol": 100.0,
+  "amount_lamports": 100000000000
+}
 ```
-http://localhost:8899/rpc?user_id=abc123-def456-ghi789
+
+### Step 3: Check Balance
+
+```bash
+curl -X POST http://localhost:8899/api/v1/fork/balance/get \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "abc123-def456-ghi789",
+    "address": "YourWalletAddress"
+  }'
 ```
 
-**Example with @solana/web3.js:**
+**Response:**
+
+```json
+{
+  "address": "YourWalletAddress",
+  "lamports": 100000000000,
+  "sol": 100.0
+}
+```
+
+### Step 4: Load Mainnet Accounts
+
+Load real accounts from mainnet into your fork:
+
+```bash
+curl -X POST http://localhost:8899/api/v1/fork/load-account \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "abc123-def456-ghi789",
+    "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+  }'
+```
+
+### Step 5: Connect a Wallet or dApp
+
+Point your Solana RPC client to your fork:
 
 ```javascript
 import { Connection } from "@solana/web3.js";
@@ -122,159 +160,181 @@ const connection = new Connection(
   "http://localhost:8899/rpc?user_id=abc123-def456-ghi789"
 );
 
-// Now all operations use your isolated fork!
+// All operations now use your isolated fork
 const balance = await connection.getBalance(publicKey);
-const slot = await connection.getSlot();
 ```
 
-## 📚 API Documentation
+## API Endpoints
 
 ### Fork Management
 
 #### Create Fork with Mainnet Sync
 
-```http
+```
 POST /api/v1/forks/mainnet
-Content-Type: application/json
+```
 
+**Request Body:**
+
+```json
 {
   "accounts": ["address1", "address2"],
-  "rpc_endpoint": "optional-custom-rpc-url"
+  "user_id": "optional-user-id",
+  "rpc_endpoint": "optional-custom-rpc"
+}
+```
+
+**Response:**
+
+```json
+{
+  "fork_id": "fork-...",
+  "user_id": "...",
+  "created_at": "1234567890",
+  "expires_at": "1234568790",
+  "mainnet_slot": 377252861,
+  "mainnet_blockhash": "...",
+  "accounts_loaded": 2,
+  "loaded_addresses": ["address1", "address2"]
 }
 ```
 
 #### Get Fork Info
 
-```http
+```
 GET /api/v1/fork/info?user_id=YOUR_USER_ID
+```
+
+**Response:**
+
+```json
+{
+  "fork_id": "fork-...",
+  "status": "active",
+  "slot": 377252861,
+  "created_at": 1234567890,
+  "uptime_seconds": 120,
+  "transaction_count": 5
+}
 ```
 
 #### List All Forks
 
-```http
+```
 GET /api/v1/forks
 ```
 
 ### Account Operations
 
-#### Load Account from Mainnet
+#### Load Single Account from Mainnet
 
-```http
+```
 POST /api/v1/fork/load-account
-Content-Type: application/json
+```
 
+**Request Body:**
+
+```json
+{
+  "user_id": "YOUR_USER_ID",
+  "address": "ACCOUNT_ADDRESS",
+  "rpc_endpoint": "optional-custom-rpc"
+}
+```
+
+#### Load Multiple Accounts
+
+```
+POST /api/v1/fork/load-accounts
+```
+
+**Request Body:**
+
+```json
+{
+  "user_id": "YOUR_USER_ID",
+  "addresses": ["address1", "address2", "address3"]
+}
+```
+
+#### Get Account Info
+
+```
+POST /api/v1/fork/account
+```
+
+**Request Body:**
+
+```json
 {
   "user_id": "YOUR_USER_ID",
   "address": "ACCOUNT_ADDRESS"
 }
 ```
 
-#### Load Multiple Accounts
+**Response:**
 
-```http
-POST /api/v1/fork/load-accounts
-Content-Type: application/json
-
+```json
 {
-  "user_id": "YOUR_USER_ID",
-  "addresses": ["address1", "address2"]
-}
-```
-
-#### Load Token Accounts
-
-```http
-POST /api/v1/fork/load-token-accounts
-Content-Type: application/json
-
-{
-  "user_id": "YOUR_USER_ID",
-  "owner": "OWNER_ADDRESS"
+  "address": "...",
+  "lamports": 1000000000,
+  "owner": "11111111111111111111111111111111",
+  "executable": false,
+  "rent_epoch": 0,
+  "data_length": 0
 }
 ```
 
 ### Balance Operations
 
-#### Set SOL Balance
+#### Set Balance (Exact Amount)
 
-```http
+```
 POST /api/v1/fork/balance/set
-Content-Type: application/json
+```
 
+**Request Body:**
+
+```json
 {
   "user_id": "YOUR_USER_ID",
   "address": "WALLET_ADDRESS",
-  "lamports": 1000000000
+  "lamports": 1000000000000
 }
 ```
 
-#### Get SOL Balance
+Sets the account balance to exactly the specified amount.
 
-```http
+#### Airdrop SOL (Add to Balance)
+
+```
+POST /api/v1/fork/airdrop
+```
+
+**Request Body:**
+
+```json
+{
+  "user_id": "YOUR_USER_ID",
+  "address": "WALLET_ADDRESS",
+  "sol": 100.0
+}
+```
+
+Adds the specified amount of SOL to the existing balance.
+
+#### Get Balance
+
+```
 POST /api/v1/fork/balance/get
-Content-Type: application/json
+```
 
+**Request Body:**
+
+```json
 {
   "user_id": "YOUR_USER_ID",
   "address": "WALLET_ADDRESS"
-}
-```
-
-#### Airdrop SOL
-
-```http
-POST /api/v1/fork/airdrop
-Content-Type: application/json
-
-{
-  "user_id": "YOUR_USER_ID",
-  "address": "WALLET_ADDRESS",
-  "sol": 10.0
-}
-```
-
-### Token Operations
-
-#### Create Token Mint
-
-```http
-POST /api/v1/token/create-mint
-Content-Type: application/json
-
-{
-  "user_id": "YOUR_USER_ID",
-  "payer_keypair": "BASE58_ENCODED_KEYPAIR",
-  "decimals": 9
-}
-```
-
-#### Mint Tokens
-
-```http
-POST /api/v1/token/mint
-Content-Type: application/json
-
-{
-  "user_id": "YOUR_USER_ID",
-  "mint_authority_keypair": "BASE58_ENCODED_KEYPAIR",
-  "mint_address": "MINT_ADDRESS",
-  "destination_account": "TOKEN_ACCOUNT",
-  "amount": 1000000
-}
-```
-
-#### Transfer Tokens
-
-```http
-POST /api/v1/token/transfer
-Content-Type: application/json
-
-{
-  "user_id": "YOUR_USER_ID",
-  "from_keypair": "BASE58_ENCODED_KEYPAIR",
-  "source_account": "SOURCE_TOKEN_ACCOUNT",
-  "destination_account": "DEST_TOKEN_ACCOUNT",
-  "amount": 1000
 }
 ```
 
@@ -282,132 +342,222 @@ Content-Type: application/json
 
 Standard Solana JSON-RPC compatible endpoint:
 
-```http
+```
 POST /rpc?user_id=YOUR_USER_ID
-Content-Type: application/json
+```
 
+**Supported Methods:**
+
+- `getBalance` - Get SOL balance
+- `getAccountInfo` - Get account details with base64/base58 encoded data
+- `getSlot` - Get current slot number
+- `getLatestBlockhash` - Get recent blockhash for transactions
+- `getBlockHeight` - Get current block height
+- `getHealth` - Health check
+- `getVersion` - Get version information
+
+**Example Request:**
+
+```json
 {
   "jsonrpc": "2.0",
   "id": 1,
   "method": "getBalance",
-  "params": ["WALLET_ADDRESS"]
+  "params": ["WalletAddress"]
 }
 ```
 
-**Supported RPC Methods:**
+**Example Response:**
 
-- `getBalance` - Get SOL balance
-- `getAccountInfo` - Get account details
-- `getSlot` - Get current slot
-- `getLatestBlockhash` - Get recent blockhash
-- `getBlockHeight` - Get block height
-- `getHealth` - Check RPC health
-- `getVersion` - Get version info
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "context": { "slot": 377252861 },
+    "value": 1000000000
+  }
+}
+```
 
-## 💡 Usage Examples
+### Program Operations
 
-### Example 1: Testing a Token Swap
+#### Load Program from Mainnet
+
+```
+POST /api/v1/program/load?user_id=YOUR_USER_ID
+```
+
+**Request Body:**
+
+```json
+{
+  "user_id": "YOUR_USER_ID",
+  "program_id": "PROGRAM_ADDRESS"
+}
+```
+
+#### Get Program Info
+
+```
+POST /api/v1/program/info?user_id=YOUR_USER_ID
+```
+
+**Request Body:**
+
+```json
+{
+  "user_id": "YOUR_USER_ID",
+  "program_id": "PROGRAM_ADDRESS"
+}
+```
+
+## Usage Examples
+
+### Example 1: Testing with Multiple Forks
+
+Create two isolated forks for different test scenarios:
 
 ```bash
-# 1. Create fork with necessary accounts
+# Create Fork 1
 curl -X POST http://localhost:8899/api/v1/forks/mainnet \
   -H "Content-Type: application/json" \
+  -d '{"accounts": []}'
+# Save user_id as USER_ID_1
+
+# Create Fork 2
+curl -X POST http://localhost:8899/api/v1/forks/mainnet \
+  -H "Content-Type: application/json" \
+  -d '{"accounts": []}'
+# Save user_id as USER_ID_2
+
+# Airdrop different amounts to same address in different forks
+curl -X POST http://localhost:8899/api/v1/fork/airdrop \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "USER_ID_1", "address": "TestAddress", "sol": 100.0}'
+
+curl -X POST http://localhost:8899/api/v1/fork/airdrop \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "USER_ID_2", "address": "TestAddress", "sol": 500.0}'
+
+# Verify isolation - same address, different balances
+curl -X POST http://localhost:8899/api/v1/fork/balance/get \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "USER_ID_1", "address": "TestAddress"}'
+# Returns: 100 SOL
+
+curl -X POST http://localhost:8899/api/v1/fork/balance/get \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "USER_ID_2", "address": "TestAddress"}'
+# Returns: 500 SOL
+```
+
+### Example 2: Loading and Inspecting USDC
+
+```bash
+# Create fork
+curl -X POST http://localhost:8899/api/v1/forks/mainnet \
+  -H "Content-Type: application/json" \
+  -d '{"accounts": []}'
+# Save user_id
+
+# Load USDC mint account
+curl -X POST http://localhost:8899/api/v1/fork/load-account \
+  -H "Content-Type: application/json" \
   -d '{
-    "accounts": [
-      "YourWalletAddress",
-      "RaydiumPoolAddress",
-      "TokenAccountA",
-      "TokenAccountB"
-    ]
+    "user_id": "YOUR_USER_ID",
+    "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
   }'
 
-# 2. Airdrop SOL for transaction fees
+# Get USDC account info
+curl -X POST http://localhost:8899/api/v1/fork/account \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "YOUR_USER_ID",
+    "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+  }'
+```
+
+### Example 3: Balance Manipulation
+
+```bash
+# Set exact balance
+curl -X POST http://localhost:8899/api/v1/fork/balance/set \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "YOUR_USER_ID",
+    "address": "TestAddress",
+    "lamports": 1000000000000
+  }'
+
+# Check balance
+curl -X POST http://localhost:8899/api/v1/fork/balance/get \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "YOUR_USER_ID", "address": "TestAddress"}'
+# Returns: 1000 SOL
+
+# Airdrop more (adds to existing)
 curl -X POST http://localhost:8899/api/v1/fork/airdrop \
   -H "Content-Type: application/json" \
   -d '{
     "user_id": "YOUR_USER_ID",
-    "address": "YourWalletAddress",
-    "sol": 10.0
+    "address": "TestAddress",
+    "sol": 500.0
   }'
 
-# 3. Execute swap transaction
-# (Use your wallet or dApp connected to the fork RPC)
+# Check balance again
+curl -X POST http://localhost:8899/api/v1/fork/balance/get \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "YOUR_USER_ID", "address": "TestAddress"}'
+# Returns: 1500 SOL
 ```
 
-### Example 2: Testing Program Deployment
-
-```bash
-# 1. Create fork
-curl -X POST http://localhost:8899/api/v1/forks/mainnet \
-  -H "Content-Type: application/json" \
-  -d '{}'
-
-# 2. Deploy program
-curl -X POST "http://localhost:8899/api/v1/program/deploy?user_id=YOUR_USER_ID" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "payer_keypair": "BASE58_KEYPAIR",
-    "program_keypair": "BASE58_KEYPAIR",
-    "program_data": "BASE64_ENCODED_PROGRAM"
-  }'
-
-# 3. Invoke program
-curl -X POST "http://localhost:8899/api/v1/program/invoke?user_id=YOUR_USER_ID" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "payer_keypair": "BASE58_KEYPAIR",
-    "program_id": "PROGRAM_ADDRESS",
-    "instruction_data": "BASE64_DATA"
-  }'
-```
-
-### Example 3: Using with Solana CLI
+### Example 4: Using with Solana CLI
 
 ```bash
 # Configure Solana CLI to use your fork
 solana config set --url "http://localhost:8899/rpc?user_id=YOUR_USER_ID"
 
-# Check cluster info
+# All CLI commands now use your fork
+solana balance YourWalletAddress
 solana cluster-version
-
-# Check balance
-solana balance YOUR_WALLET_ADDRESS
-
-# All CLI commands now use your fork!
+solana slot
 ```
 
-### Example 4: Integration with TypeScript/JavaScript
+### Example 5: TypeScript/JavaScript Integration
 
 ```typescript
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
-// Create connection to fork
+// Connect to your fork
 const connection = new Connection(
   "http://localhost:8899/rpc?user_id=YOUR_USER_ID",
   "confirmed"
 );
 
 // Check balance
-const publicKey = new PublicKey("YOUR_WALLET_ADDRESS");
+const publicKey = new PublicKey("YourWalletAddress");
 const balance = await connection.getBalance(publicKey);
 console.log(`Balance: ${balance / LAMPORTS_PER_SOL} SOL`);
 
-// Get slot
+// Get slot (synced from mainnet)
 const slot = await connection.getSlot();
 console.log(`Current slot: ${slot}`);
 
-// Get latest blockhash
+// Get latest blockhash (from mainnet)
 const { blockhash } = await connection.getLatestBlockhash();
 console.log(`Blockhash: ${blockhash}`);
+
+// All standard Solana operations work as expected
 ```
 
-## 🏗️ Architecture
+## Architecture
 
-### System Overview
+### System Design
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     Solana Fork Engine                      │
+│                   Solana Fork Engine                        │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐ │
@@ -417,7 +567,6 @@ console.log(`Blockhash: ${blockhash}`);
 │  │  LiteSVM     │    │  LiteSVM     │    │  LiteSVM     │ │
 │  │  Instance    │    │  Instance    │    │  Instance    │ │
 │  └──────────────┘    └──────────────┘    └──────────────┘ │
-│         ▲                   ▲                   ▲          │
 │         │                   │                   │          │
 │         └───────────────────┴───────────────────┘          │
 │                             │                              │
@@ -427,60 +576,59 @@ console.log(`Blockhash: ${blockhash}`);
 │                   └────────────────────┘                   │
 │                             │                              │
 │         ┌───────────────────┴───────────────────┐          │
-│         ▼                                       ▼          │
-│  ┌─────────────┐                        ┌─────────────┐   │
+│         │                                       │          │
+│  ┌──────▼──────┐                        ┌──────▼──────┐   │
 │  │ REST API    │                        │ JSON-RPC    │   │
 │  │ Endpoints   │                        │ Endpoint    │   │
 │  └─────────────┘                        └─────────────┘   │
-│         ▲                                       ▲          │
-└─────────┼───────────────────────────────────────┼──────────┘
-          │                                       │
-          │                                       │
-     ┌────▼─────┐                           ┌────▼─────┐
-     │ HTTP API │                           │ Wallets  │
-     │ Clients  │                           │  & dApps │
-     └──────────┘                           └──────────┘
-              ▲
-              │
-              │
-       ┌──────▼──────┐
-       │   Mainnet   │
-       │  (Read Only)│
-       └─────────────┘
+└─────────────────────────────────────────────────────────────┘
+                    │                           │
+              ┌─────▼─────┐             ┌──────▼──────┐
+              │ HTTP API  │             │  Wallets &  │
+              │  Clients  │             │    dApps    │
+              └───────────┘             └─────────────┘
+                    │
+              ┌─────▼─────┐
+              │  Mainnet  │
+              │(Read Only)│
+              └───────────┘
 ```
 
 ### Key Components
 
-1. **Fork Manager**: Thread-safe manager that handles fork lifecycle
+**Fork Manager:**
 
-   - Creates and tracks forks
-   - Maps users to their forks
-   - Cleans up expired forks
+- Thread-safe manager using Arc and Mutex
+- Tracks all active forks and user mappings
+- Handles fork lifecycle (creation, expiration, cleanup)
+- Ensures isolation between different users
 
-2. **Fork**: Individual isolated blockchain instance
+**Fork:**
 
-   - Contains LiteSVM instance
-   - Tracks slot, blockhash, and transaction count
-   - Synced with mainnet at creation time
+- Contains isolated LiteSVM instance
+- Stores mainnet sync data (slot, blockhash)
+- Tracks transaction count and fork metadata
+- Provides balance and account manipulation methods
 
-3. **Mainnet Client**: Fetches data from real Solana mainnet
+**Mainnet Client:**
 
-   - Account state
-   - Token accounts
-   - Slot and blockhash
+- Fetches account data from Solana mainnet via RPC
+- Loads programs and token accounts
+- Retrieves slot and blockhash information
 
-4. **API Layer**: Axum-based HTTP server
-   - RESTful endpoints for custom operations
-   - JSON-RPC endpoint for standard Solana compatibility
+**API Layer:**
 
-### Data Flow
+- RESTful endpoints for custom operations
+- JSON-RPC endpoint for standard Solana compatibility
+- Shared state across all requests via AppState
 
-1. **Fork Creation**: User → API → Fork Manager → Create Fork + Fetch Mainnet State
-2. **Account Loading**: User → API → Mainnet Client → Fork (set account)
-3. **Transaction**: User → API/RPC → Fork (LiteSVM) → Execute → Update State
-4. **Cleanup**: Background Task → Fork Manager → Remove Expired Forks
+**Background Cleanup Task:**
 
-## ⚙️ Configuration
+- Runs every 60 seconds
+- Removes forks older than 15 minutes
+- Prevents resource exhaustion
+
+## Configuration
 
 ### Environment Variables
 
@@ -494,106 +642,58 @@ FORK_LIFETIME=900
 # Cleanup interval in seconds (default: 60)
 CLEANUP_INTERVAL=60
 
-# Default Solana RPC endpoint (default: https://api.mainnet-beta.solana.com)
+# Default Solana RPC endpoint
 SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
 ```
 
-### Constants
+### Modifying Defaults
 
-Edit `src/constants.rs` to change default values:
+Edit `src/constants.rs`:
 
 ```rust
 pub const DEFAULT_SERVER_ADDR: &str = "0.0.0.0:8899";
-pub const FORK_LIFETIME_SECONDS: u64 = 15 * 60; // 15 minutes
-pub const CLEANUP_INTERVAL_SECONDS: u64 = 60;   // 1 minute
+pub const FORK_LIFETIME_SECONDS: u64 = 15 * 60;
+pub const CLEANUP_INTERVAL_SECONDS: u64 = 60;
 ```
 
-## 🧪 Testing
-
-### Run Tests
-
-```bash
-cargo test
 ```
 
-### Manual Testing
+## Limitations
 
-```bash
-# Start the server
-cargo run
+### Known Limitations
 
-# In another terminal, run the test script
-./scripts/test.sh
-```
+**Upgradeable Programs:**
+BPF Upgradeable Loader v3 programs (like Jupiter v6) require complex multi-account handling. Currently, only BPF Loader v2 programs are fully supported.
 
-## 🔒 Security Considerations
+**Token Account Loading:**
+The `load-token-accounts` endpoint requires `getProgramAccounts` RPC method, which is disabled on most public Solana RPC endpoints. Use premium RPC providers or load token accounts individually.
 
-- **Local Development Only**: This engine is designed for local testing and development
-- **No Authentication**: There is no user authentication - anyone can create/access forks
-- **Resource Limits**: Forks auto-expire after 15 minutes to prevent resource exhaustion
-- **Network Isolation**: Forks are isolated from each other to prevent interference
+**State Persistence:**
+Forks exist only in memory and are lost when the server restarts.
 
-**⚠️ Do NOT expose this server to the public internet without proper authentication and rate limiting!**
+**Network Isolation:**
+This is a local development tool. Do not expose the server to public internet without proper authentication and rate limiting.
 
-## 🤝 Contributing
+## Security Considerations
 
-Contributions are welcome! Please follow these steps:
+- Local Development Only: This engine is designed for local testing
+- No Authentication: There is no built-in user authentication
+- Resource Limits: Forks auto-expire after 15 minutes to prevent resource exhaustion
+- Fork Isolation: Each fork has its own LiteSVM instance to prevent interference
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+Warning: Do NOT expose this server to the public internet without implementing proper authentication, rate limiting, and access controls.
 
-### Development Setup
+## License
 
-```bash
-# Clone your fork
-git clone https://github.com/yourusername/solana-fork-engine.git
-cd solana-fork-engine
+This project is licensed under the MIT License.
 
-# Install development dependencies
-cargo build
+## Acknowledgments
 
-# Run in development mode with auto-reload
-cargo watch -x run
-
-# Run tests
-cargo test
-
-# Format code
-cargo fmt
-
-# Lint code
-cargo clippy
-```
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- Built with [LiteSVM](https://github.com/LiteSVM/litesvm) for fast Solana simulation
-- Powered by [Axum](https://github.com/tokio-rs/axum) for the HTTP server
-- Inspired by [Tenderly](https://tenderly.co/) forks for Ethereum
-
-## 📞 Support
-
-- **Issues**: [GitHub Issues](https://github.com/yourusername/solana-fork-engine/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/solana-fork-engine/discussions)
-
-## 🗺️ Roadmap
-
-- [ ] Add more RPC methods (`sendTransaction`, `simulateTransaction`, etc.)
-- [ ] Persistent fork snapshots
-- [ ] Fork sharing between users
-- [ ] Web UI for fork management
-- [ ] Performance metrics and monitoring
-- [ ] Docker support
-- [ ] Transaction history and replay
-- [ ] Custom slot progression speed
+- Built with LiteSVM for Solana simulation
+- Powered by Axum web framework
+- Inspired by Tenderly forks for Ethereum
 
 ---
 
-**Made with ❤️ for the Solana developer community**
+Built for the Solana developer community
+```
